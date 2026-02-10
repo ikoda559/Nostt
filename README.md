@@ -9,3 +9,5 @@
 
   Run `npm run dev` to start the development server.
   
+  # Credits
+  -<a href="https://www.vecteezy.com/free-videos/programming">Programming Stock Videos by Vecteezy</a>
