@@ -1,7 +1,7 @@
 
-  # Freelance Design Marketplace
+  # 3d Printing Marketplace
 
-  This is a niche for a marketplace that offers simplsitity of wanting an idea come to life and getting it done.
+  A 3D printing storefront where customers can browse, place custom orders, and search previously made models for purchase.
 
   ## Running the code
 
