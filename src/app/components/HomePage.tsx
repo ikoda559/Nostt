@@ -1,358 +1,285 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Users, Shield, TrendingUp, Clock, Award, Sparkles, Palette, Code, Layout, Smartphone, Globe } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowRight, Star, Box, Search, ShoppingCart } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+
+// ── MOCK PRODUCTS (replace with real data/API later) ──────────────
+const ALL_PRODUCTS = [
+  { id: 1, name: 'Dragon Figurine', category: 'Figurines', price: 24.99, rating: 4.9, reviews: 128, color: 'from-blue-900/60 to-slate-900/60' },
+  { id: 2, name: 'Geometric Vase', category: 'Home Decor', price: 18.99, rating: 4.7, reviews: 84, color: 'from-purple-900/60 to-slate-900/60' },
+  { id: 3, name: 'D&D Miniature Set', category: 'Miniatures', price: 34.99, rating: 5.0, reviews: 203, color: 'from-pink-900/60 to-slate-900/60' },
+  { id: 4, name: 'Cable Organizer', category: 'Functional', price: 9.99, rating: 4.8, reviews: 56, color: 'from-green-900/60 to-slate-900/60' },
+  { id: 5, name: 'Skull Planter', category: 'Home Decor', price: 14.99, rating: 4.6, reviews: 91, color: 'from-orange-900/60 to-slate-900/60' },
+  { id: 6, name: 'Knight Helmet', category: 'Figurines', price: 29.99, rating: 4.9, reviews: 47, color: 'from-cyan-900/60 to-slate-900/60' },
+  { id: 7, name: 'Phone Stand', category: 'Functional', price: 7.99, rating: 4.5, reviews: 33, color: 'from-yellow-900/60 to-slate-900/60' },
+  { id: 8, name: 'Wizard Staff', category: 'Figurines', price: 19.99, rating: 4.8, reviews: 62, color: 'from-indigo-900/60 to-slate-900/60' },
+];
 
 export function HomePage() {
-  // Track scroll position for icon animation
-  const [scrollY, setScrollY] = useState(0);
-  // Track which icon is currently displayed (for rotation effect)
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+  const [results, setResults] = useState<typeof ALL_PRODUCTS>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Calculate scroll progress from 0 to 1 (complete at 400px scroll)
-  const scrollProgress = Math.min(scrollY / 400, 1);
-
-  // Defines the icons that will float and spread in a circle
-  const floatingIcons = [
-    { Icon: Palette, color: 'text-pink-500' },
-    { Icon: Code, color: 'text-blue-500' },
-    { Icon: Layout, color: 'text-purple-500' },
-    { Icon: Smartphone, color: 'text-green-500' },
-    { Icon: Globe, color: 'text-yellow-500' },
-    { Icon: Sparkles, color: 'text-indigo-500' },
-  ];
-
-  // Listen to scroll events and update scrollY state
   useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
+    const q = searchInput.trim().toLowerCase();
+    if (!q) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+    setHasSearched(true);
+    setResults(
+      ALL_PRODUCTS.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      )
+    );
+  }, [searchInput]);
+
+  // Simple fade out → reset → fade in loop
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let looping = false;
+
+    const handleTimeUpdate = () => {
+      if (looping) return;
+      const remaining = video.duration - video.currentTime;
+
+      if (remaining <= 1.5) {
+        looping = true;
+
+        // Fade out over 1s
+        video.style.transition = 'opacity 1s ease';
+        video.style.opacity = '0';
+
+        setTimeout(() => {
+          // Reset to start while invisible
+          video.currentTime = 0;
+
+          // Fade back in over 1s
+          video.style.transition = 'opacity 1s ease';
+          video.style.opacity = '1';
+
+          // Allow loop to trigger again after fade-in completes
+          setTimeout(() => {
+            looping = false;
+          }, 1000);
+        }, 1000);
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    // Cleanup: remove event listener when component unmounts
-    return () => window.removeEventListener('scroll', handleScroll);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
   }, []);
 
-  // Rotate through icons every 1600ms when centered
-  useEffect(() => {
-    if (scrollProgress < 0.1) {
-      const interval = setInterval(() => {
-        setCurrentIconIndex((prev) => (prev + 1) % floatingIcons.length);
-      }, 1850); // Icon change speed
-      
-      return () => clearInterval(interval);
-    }
-  }, [scrollProgress, floatingIcons.length]);
-
-  // Calculate each icon's position in a circular formation
-  const getIconPosition = (index: number, total: number) => {
-    // Calculate angle for even distribution around circle (starts from top)
-    const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
-    // Radius grows from 0 to 135px based on scroll progress
-    const radius = 135 * scrollProgress;
-    // Calculate x and y coordinates using trigonometry
-    const x = Math.cos(angle) * radius;
-    const y = Math.sin(angle) * radius;
-    // Icons scale from 0.5 to 1 as they spread
-    const scale = 0.5 + (scrollProgress * 0.5);
-    // Icons become more opaque as they spread (0.3 to 1)
-    const opacity = 0.4 + (scrollProgress * 0.6);
-
-    return {
-      transform: `translate(${x}px, ${y}px) scale(${scale})`,
-      opacity,
-    };
-  };
-
-  // Interpolate color from pure black to pure white based on scroll
-  const getHeadingColor = () => {
-    const v = Math.round(255 * scrollProgress);
-    return `rgb(${v}, ${v}, ${v})`;
-  };
-
-  // Interpolate tagline color from light gray to pure white as user scrolls
-  const getTaglineColor = () => {
-    // RGB values: gray-200 (229,231,235) to white (255,255,255)
-    const r = Math.round(229 + (255 - 229) * scrollProgress);
-    const g = Math.round(231 + (255 - 231) * scrollProgress);
-    const b = Math.round(235 + (255 - 235) * scrollProgress);
-    return `rgb(${r}, ${g}, ${b})`;
-  };
-
   return (
-    <div className="min-h-screen">
-      {/* Hero Section - Full screen with floating icons */}
-      <div className="bg-gradient-to-b from-white to-slate-800 min-h-screen flex items-start justify-center pt-32 relative overflow-hidden">
-        {/* Main heading and tagline */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 relative z-10">
-          <div className="text-center animate-fadeIn">
-            {/* Custom styles for Playfair Display font and fade-in animation */}
-            <style>
-              {`
-                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
-                @keyframes fadeIn {
-                  from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                  }
-                  to {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
-                }
-                .animate-fadeIn {
-                  animation: fadeIn 1s ease-out;
-                }
-              `}
-            </style>
-            {/* Main headline with custom serif font */}
-            <h1 
-              className="text-7xl sm:text-8xl font-normal"
-              style={{ 
-                fontFamily: '"Playfair Display", Georgia, serif',
-                color: '#1e293b'
+    <div className="min-h-screen bg-[#0a0a12]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;700&display=swap');
+        .page-font { font-family: 'Outfit', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); opacity: 0.3; }
+          50%       { transform: translateY(4px); opacity: 0.7; }
+        }
+
+        .fade-up   { animation: fadeUp 0.85s ease-out forwards; }
+        .fade-up-1 { animation: fadeUp 0.85s ease-out 0.15s forwards; opacity: 0; }
+        .fade-up-2 { animation: fadeUp 0.85s ease-out 0.28s forwards; opacity: 0; }
+
+        .search-glow:focus-within {
+          box-shadow: 0 0 0 2px rgba(96,165,250,0.35), 0 8px 40px rgba(96,165,250,0.18);
+        }
+        .result-card {
+          transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+        .result-card:hover {
+          transform: translateY(-3px);
+          border-color: rgba(255,255,255,0.18);
+        }
+        .result-card:hover .card-img {
+          transform: scale(1.06);
+        }
+        .card-img {
+          transition: transform 0.4s ease;
+        }
+        .results-enter {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      `}</style>
+
+      {/* ── HERO ───────────────────────────────────────────────────── */}
+      <div
+        className="page-font relative flex flex-col items-center justify-center overflow-hidden"
+        style={{ minHeight: hasSearched ? '52vh' : '100vh', transition: 'min-height 0.6s cubic-bezier(0.4,0,0.2,1)' }}
+      >
+        {/* Video background */}
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+          style={{ opacity: 1 }}
+        >
+          <source src="/hero.mp4" type="video/mp4" />
+          <source src="/hero.webm" type="video/webm" />
+        </video>
+
+        {/* Overlay */}
+        <div className="absolute inset-0 z-0"
+          style={{
+            background: hasSearched ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.60)',
+            transition: 'background 0.6s ease'
+          }} />
+
+        {/* Hero text + search */}
+        <div
+          className="relative z-10 text-center px-4 w-full max-w-2xl mx-auto"
+          style={{ paddingTop: hasSearched ? '6rem' : '0', paddingBottom: hasSearched ? '2.5rem' : '0', transition: 'padding 0.6s ease' }}
+        >
+          {/* Headline — shrinks when results show */}
+          <div style={{
+            transform: hasSearched ? 'scale(0.72)' : 'scale(1)',
+            transformOrigin: 'top center',
+            transition: 'transform 0.6s cubic-bezier(0.4,0,0.2,1)',
+            marginBottom: hasSearched ? '-1rem' : '0'
+          }}>
+            <p className="fade-up text-blue-400 text-xs font-semibold tracking-widest uppercase mb-5">
+              Handcrafted 3D Prints
+            </p>
+            <h1 className="fade-up-1 serif text-6xl sm:text-7xl text-white font-normal leading-tight mb-5">
+              Bring Ideas<br />
+              <span style={{ background: 'linear-gradient(135deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Into Reality.
+              </span>
+            </h1>
+            <p className="fade-up-2 text-white/45 text-base mb-8">
+              Unique, made-to-order 3D printed models — figurines, decor, miniatures & more.
+            </p>
+          </div>
+
+          {/* Search bar */}
+          <div className="fade-up-2 relative">
+            <div
+              className="search-glow flex items-center backdrop-blur-xl rounded-2xl overflow-hidden transition-all border"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                borderColor: 'rgba(255,255,255,0.25)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)'
               }}
             >
-              Your Ideas Can Become Reality.
-            </h1>
-            {/* Tagline - gray, larger text, spaced below headline */}
-            <p className="text-xl text-white mt-16">
-              Simply post what application you want created, then a developer will take it from there...
-            </p>
+              <Search className="w-4 h-4 text-white/40 ml-5 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search previously made models..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/30 px-4 py-4 text-sm"
+                autoComplete="off"
+              />
+              {searchInput && (
+                <button
+                  onClick={() => setSearchInput('')}
+                  className="mr-2 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/50 hover:text-white text-xs transition-all"
+                >
+                  ✕
+                </button>
+              )}
+              <button
+                className="flex items-center gap-2 px-6 py-4 text-sm font-medium text-white shrink-0 transition-opacity hover:opacity-85"
+                style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)' }}
+              >
+                Search <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
 
-            {/* Floating Icons Container - positioned below text */}
-            <div className="relative flex items-center justify-center pointer-events-none h-64 mt-28">
-              {floatingIcons.map((item, index) => {
-                const { Icon, color } = item;
-                const position = getIconPosition(index, floatingIcons.length);
-                const isCenter = scrollProgress < 0.1;
-                const isCenterIcon = index === currentIconIndex;
-                
-                // For center state: only show the current rotating icon
-                // For spread state: show all icons
-                const shouldRender = !isCenter || isCenterIcon;
-                
-                // Fade out non-center icons when returning to center
-                const iconOpacity = isCenter && !isCenterIcon ? 0 : position.opacity;
+        {/* Scroll indicator — hidden once searching */}
+        {!hasSearched && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+            <span className="text-white/25 text-xs tracking-widest uppercase">Scroll to browse</span>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-px h-8 bg-gradient-to-b from-white/25 to-transparent" />
+              <div className="w-1 h-1 rounded-full bg-white/25"
+                style={{ animation: 'bounce 1.8s ease-in-out infinite' }} />
+            </div>
+          </div>
+        )}
+      </div>
 
-                return (
-                  <div
-                    key={index}
-                    className="absolute"
-                    style={{
-                      transform: position.transform,
-                      opacity: shouldRender ? iconOpacity : 0,
-                      transition: isCenter 
-                        ? 'opacity 0.3s ease-out' // Only transition opacity when centering
-                        : 'all 0.3s ease-out', // Transition everything when spreading
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    <div className={`
-                      ${isCenter ? 'w-42 h-42' : 'w-14 h-14'} 
-                      ${isCenter ? 'bg-gradient-to-br from-gray-400 via-white to-gray-200' : 'bg-white'}
-                      rounded-2xl 
-                      shadow-lg
-                      flex items-center justify-center 
-                      ${color} 
-                      border border-gray-100
-                      ${isCenter && isCenterIcon ? 'animate-pulse' : ''}
-                    `}>
-                      <Icon className={`${isCenter ? 'w-24 h-24' : 'w-9 h-9'}`} strokeWidth={1.1} />
+      {/* ── RESULTS ────────────────────────────────────────────────── */}
+      {hasSearched && (
+        <div className="page-font results-enter max-w-6xl mx-auto px-6 pb-20 pt-10">
+          <p className="text-white/35 text-sm mb-6">
+            {results.length > 0
+              ? `${results.length} result${results.length !== 1 ? 's' : ''} for "${searchInput}"`
+              : `No results for "${searchInput}"`}
+          </p>
+
+          {results.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {results.map((product) => (
+                <div key={product.id}
+                  className="result-card bg-white/4 border border-white/8 rounded-2xl overflow-hidden cursor-pointer">
+                  <div className={`relative h-44 bg-gradient-to-br ${product.color} overflow-hidden`}>
+                    <div className="card-img absolute inset-0 flex items-center justify-center">
+                      <Box className="w-12 h-12 text-white/15" strokeWidth={0.8} />
+                    </div>
+                    <div className="absolute top-2.5 right-2.5 px-2 py-0.5 bg-black/50 backdrop-blur-sm rounded-full text-xs text-white/55 border border-white/8">
+                      {product.category}
                     </div>
                   </div>
-                );
-              })}
+                  <div className="p-4">
+                    <h3 className="text-white text-sm font-medium mb-1.5">{product.name}</h3>
+                    <div className="flex items-center gap-1 mb-3">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                      <span className="text-white/60 text-xs">{product.rating}</span>
+                      <span className="text-white/25 text-xs">({product.reviews})</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-semibold text-sm">${product.price}</span>
+                      <button
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-full transition-all hover:opacity-85"
+                        style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)' }}>
+                        <ShoppingCart className="w-3 h-3" /> Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-center mb-5">
+                <Search className="w-7 h-7 text-white/20" />
+              </div>
+              <p className="text-white/50 font-medium mb-1">Nothing found</p>
+              <p className="text-white/25 text-sm">Try a different search term.</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* How It Works Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl mb-4 text-gray-900 font-bold">How It Works</h2>
-          <p className="text-xl text-gray-600">Simple, fast, and secure project collaboration</p>
+      {/* ── DEFAULT STATE ──────────────────────────────────────────── */}
+      {!hasSearched && (
+        <div className="page-font max-w-6xl mx-auto px-6 py-20 text-center">
+          <p className="text-white/20 text-sm">Start typing above to find models</p>
         </div>
+      )}
 
-        {/* 3-column grid on medium+ screens */}
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <Zap className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="text-xl mb-3 text-gray-900 font-semibold">Post Your Idea</h3>
-            <p className="text-gray-600">
-              Describe your application idea, upload designs, set your timeline and budget range. 
-              Make it easy for designers to understand your vision.
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <Users className="w-6 h-6 text-purple-600" />
-            </div>
-            <h3 className="text-xl mb-3 text-gray-900 font-semibold">Find Perfect Matches</h3>
-            <p className="text-gray-600">
-              Designers browse available projects and reach out if they are interested. 
-              Review their portfolios and choose who you would like to work with.
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-              <Shield className="w-6 h-6 text-pink-600" />
-            </div>
-            <h3 className="text-xl mb-3 text-gray-900 font-semibold">Collaborate & Deliver</h3>
-            <p className="text-gray-600">
-              Work together to bring your idea to life. Track progress, share feedback, 
-              and get your application designed within your timeline.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Why Choose Us Section*/}
-      <div className="bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl mb-4 text-gray-900 font-bold">Why Choose nosst?</h2>
-            <p className="text-xl text-gray-600">The platform built for modern app development</p>
-          </div>
-
-          {/* Responsive grid: 1 col mobile, 2 cols tablet, 3 cols desktop */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <h3 className="text-lg mb-2 text-gray-900 font-semibold">Quality Talent Pool</h3>
-              <p className="text-gray-600 text-sm">
-                Access to vetted designers with proven track records in app design
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <Clock className="w-5 h-5 text-purple-600" />
-              </div>
-              <h3 className="text-lg mb-2 text-gray-900 font-semibold">Fast Turnaround</h3>
-              <p className="text-gray-600 text-sm">
-                Get matched with designers quickly and start your project within days
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-                <Award className="w-5 h-5 text-pink-600" />
-              </div>
-              <h3 className="text-lg mb-2 text-gray-900 font-semibold">Transparent Pricing</h3>
-              <p className="text-gray-600 text-sm">
-                Clear budget ranges, no hidden fees, pay only when you are satisfied
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-5 h-5 text-green-600" />
-              </div>
-              <h3 className="text-lg mb-2 text-gray-900 font-semibold">Secure Platform</h3>
-              <p className="text-gray-600 text-sm">
-                Your project data and payments are protected with enterprise-grade security
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                <Users className="w-5 h-5 text-yellow-600" />
-              </div>
-              <h3 className="text-lg mb-2 text-gray-900 font-semibold">Dedicated Support</h3>
-              <p className="text-gray-600 text-sm">
-                Our team is here to help you every step of the way
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                <Zap className="w-5 h-5 text-indigo-600" />
-              </div>
-              <h3 className="text-lg mb-2 text-gray-900 font-semibold">Modern Workflow</h3>
-              <p className="text-gray-600 text-sm">
-                Streamlined tools for communication, feedback, and project management
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section - 3 Fake reviews */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl mb-4 text-gray-900 font-bold">What Our Users Say</h2>
-          <p className="text-xl text-gray-600">Real feedback from real projects</p>
-        </div>
-
-        {/* 3-column grid on medium+ screens */}
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-              <div className="ml-4">
-                <div className="font-semibold text-gray-900">Sarah Chen</div>
-                <div className="text-sm text-gray-500">Startup Founder</div>
-              </div>
-            </div>
-            <p className="text-gray-600">
-              "Found an amazing designer for my fitness app in just 2 days. The quality exceeded my expectations!"
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-              <div className="ml-4">
-                <div className="font-semibold text-gray-900">Marcus Rodriguez</div>
-                <div className="text-sm text-gray-500">Product Manager</div>
-              </div>
-            </div>
-            <p className="text-gray-600">
-              "The platform made it so easy to find the right talent. Communication was smooth throughout the project."
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-blue-500 rounded-full"></div>
-              <div className="ml-4">
-                <div className="font-semibold text-gray-900">Emily Zhang</div>
-                <div className="text-sm text-gray-500">Entrepreneur</div>
-              </div>
-            </div>
-            <p className="text-gray-600">
-              "Best decision for my SaaS project. The designer understood my vision perfectly and delivered on time."
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Section - Call to action with dark gradient background */}
-      <div className="bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <h2 className="text-4xl mb-4 font-bold">Ready to get started?</h2>
-            <p className="text-gray-300 mb-8 text-lg">
-              Join hundreds of clients and designers already using nosst
-            </p>
-            {/* Primary CTA button linking to project creation */}
-            <Link 
-              to="/create" 
-              className="inline-flex items-center px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors space-x-2 font-semibold"
-            >
-              <span>Post Your First Project</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

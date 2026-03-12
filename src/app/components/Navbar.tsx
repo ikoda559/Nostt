@@ -1,92 +1,142 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PlusCircle, Search, LayoutGrid, Home, LogIn } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { ShoppingCart, Layers, Printer, Home, Menu, X } from 'lucide-react';
 
 export function Navbar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const [searchInput, setSearchInput] = useState('');
-  
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const isActive = (path: string) => location.pathname === path;
-  
-  // Handle search submission
-  const handleSearch = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    
-    if (searchInput.trim()) {
-      // Navigate to browse page with search query parameter
-      navigate(`/browse?q=${encodeURIComponent(searchInput.trim())}`);
-    }
-  };
 
-  // Handle Enter key press
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-  
+  const navLinks = [
+    { to: '/', label: 'Home', Icon: Home },
+    { to: '/categories', label: 'Categories', Icon: Layers },
+    { to: '/custom', label: 'Custom Print', Icon: Printer },
+  ];
+
   return (
-    <nav className="bg-white/60 backdrop-blur-lg top-0 left-0 right-0 z-50 border-b border-gray-300/40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-[auto_1fr_auto] items-center h-20 gap-0">
-          <Link to="/" className="flex items-center shrink-0 -ml-4">
-            <img 
-              src="/nosst.svg" 
-              alt="Nosst" 
-              className="h-16 w-50 object-contain rounded-lg"
-            />
-          </Link>
+    <>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 border-b border-white/10"
+        style={{ background: 'rgba(10, 10, 20, 0.55)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+      >
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+          .navbar-font { font-family: 'Outfit', sans-serif; }
+          .nav-link-active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            border-radius: 2px;
+          }
+          .cart-btn:hover .cart-icon {
+            transform: rotate(-12deg) scale(1.1);
+            transition: transform 0.2s ease;
+          }
+          @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .mobile-menu { animation: slideDown 0.2s ease-out forwards; }
+        `}</style>
 
-          <div className="flex-1 min-w-0">
-            <form onSubmit={handleSearch} className="w-full">
-              <div className="w-full max-w-none bg-white/80 backdrop-blur-md border-[0.5px] border-gray-200 rounded-full px-0 py-0 flex items-center">
-                <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="flex-1 bg-transparent border-none outline-none text-gray-900 placeholder-gray-400 px-6"
-                />
-                <div className="flex items-center space-x-3 bg-slate-800 rounded-r-full px-4 py-3">
-                  <Search 
-                    className="w-5 h-5 text-white cursor-pointer hover:text-gray-200 transition-colors" 
-                    onClick={handleSearch}
-                  />
-                </div>
+        <div className="navbar-font max-w-7xl mx-auto px-5 lg:px-8">
+          <div className="grid grid-cols-3 items-center h-16">
+
+            {/* LEFT — Logo (desktop) / Hamburger (mobile) */}
+            <div className="flex items-center">
+              {/* Logo — desktop only */}
+              <Link to="/" className="hidden md:flex items-center">
+                <img src="/nostt.svg" alt="Logo" className="h-14 w-auto object-contain" />
+              </Link>
+
+              {/* Hamburger — mobile only */}
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-white/8 border border-white/12 hover:bg-white/15 transition-colors text-white/70 hover:text-white"
+              >
+                {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* CENTER — Nav links (desktop) / Logo (mobile) */}
+            <div className="flex items-center justify-center">
+              {/* Nav links — desktop only */}
+              <div className="hidden md:flex items-center gap-1">
+                {navLinks.map(({ to, label, Icon }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={`relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                      ${isActive(to)
+                        ? 'text-white nav-link-active'
+                        : 'text-white/55 hover:text-white hover:bg-white/8'
+                      }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </Link>
+                ))}
               </div>
-            </form>
-          </div>
-          
-          <div className="flex items-center space-x-3 shrink-0 pl-8 -mr-10">
-            <Link 
-              to="/browse" 
-              className={`flex items-center space-x-1 px-4 py-2 bg-slate-800 text-white rounded-full hover:bg-slate-700 transition-all ${
-                isActive('/browse') 
-                  ? 'ring-2 ring-slate-600' 
-                  : ''
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span>Browse Projects</span>
-            </Link>
 
-            <Link 
-              to="/create" 
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-800 text-white rounded-full hover:bg-slate-700 transition-all"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Post Project</span>
-            </Link>
-            
-            <button className="flex items-center space-x-2 px-4 py-2 border border-slate-800 text-slate-800 rounded-full hover:bg-slate-50 transition-colors">
-              <LogIn className="w-4 h-4" />
-              <span>Login</span>
-            </button>
+              {/* Logo — mobile only, centered */}
+              <Link to="/" className="md:hidden flex items-center">
+                <img src="/nostt.svg" alt="Logo" className="h-14 w-auto object-contain" />
+              </Link>
+            </div>
+
+            {/* RIGHT — Cart + Sign In (always) */}
+            <div className="flex items-center justify-end gap-2">
+              {/* Cart */}
+              <Link
+                to="/cart"
+                className="cart-btn relative flex items-center justify-center w-9 h-9 rounded-full bg-white/8 border border-white/12 hover:bg-white/15 transition-colors"
+              >
+                <ShoppingCart className="cart-icon w-4 h-4 text-white/80" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full text-[10px] text-white font-semibold flex items-center justify-center">
+                  0
+                </span>
+              </Link>
+
+              {/* Sign In */}
+              <Link
+                to="/login"
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-white/60 hover:text-white transition-colors"
+              >
+                Sign in
+              </Link>
+            </div>
+
           </div>
         </div>
-      </div>
-    </nav>
+
+        {/* Mobile dropdown — nav links only */}
+        {mobileOpen && (
+          <div
+            className="mobile-menu md:hidden border-t border-white/10 px-5 py-4 flex flex-col gap-1"
+            style={{ background: 'rgba(10, 10, 20, 0.95)', backdropFilter: 'blur(20px)' }}
+          >
+            {navLinks.map(({ to, label, Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors
+                  ${isActive(to)
+                    ? 'text-white bg-white/10'
+                    : 'text-white/55 hover:text-white hover:bg-white/8'
+                  }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </nav>
+    </>
   );
 }
